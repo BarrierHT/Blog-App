@@ -1,2 +1,2 @@
 # Blog-App
-This is a Blog application
+This is a Online Blog application
