@@ -1,42 +1,64 @@
-const { validate } = require('../middlewares/validator');
+const path = require('path');
 
-exports.getPosts = (req, res, next) => {
-    res.status(200).json({
-        posts: [
-            {
-                _id: new Date().getTime(),
-                title: 'First',
-                content: 'First content',
-                creator: {
-                    name: 'test1',
-                },
-                imageUrl: 'data/images/TheForest.png',
-                createdAt: new Date(),
-            },
-        ],
-        totalItems: 1,
-    });
+const { validate } = require('../middlewares/validator');
+const Post = require('../models/post');
+const errorHandler = require('../util/errorHandler').errorHandler;
+const fileRemove = require('../util/fileHelper').fileRemove;
+
+exports.getPost = async (req, res, next) => {
+    const postId = req.params.postId;
+    Post.findById(postId)
+        .then(post => {
+            console.log(post);
+            if (post)
+                return res.status(200).json({ message: 'Post Fetched', post });
+            else throw errorHandler('Post Not Found', 404, {});
+        })
+        .catch(err => next(err));
 };
 
-exports.createPost = (req, res, next) => {
+exports.getPosts = (req, res, next) => {
+    Post.find()
+        .then(posts => {
+            res.status(200).json({
+                message: 'Posts Fetched',
+                posts,
+                totalItems: posts.length,
+            });
+        })
+        .catch(err => next(err));
+};
+
+exports.createPost = async (req, res, next) => {
     const { title, content } = req.body;
     const validationErrors = validate(req);
 
-    console.log(title, ' ', content);
+    if (Object.keys(validationErrors).length > 0) {
+        if (req.file)
+            fileRemove(
+                path.join(__dirname, '..', 'data', 'images', req.file.filename)
+            );
+        const err = errorHandler('Validation Error', 422, validationErrors);
+        return await Promise.reject(err).catch(err => next(err));
+    }
 
-    if (Object.keys(validationErrors).length > 0)
-        return res
-            .status(422)
-            .json({ message: 'Validation-failed', errors: validationErrors });
+    const imageUrl = 'images/' + (req.file.filename || '');
 
-    res.status(201).json({
-        message: 'Post created successfully',
-        post: {
-            _id: new Date().getTime(),
-            title,
-            content,
-            creator: { name: 'test1' },
-            createdAt: new Date(),
+    const post = new Post({
+        title,
+        content,
+        creator: {
+            name: 'test1',
         },
+        imageUrl,
     });
+    post.save()
+        .then(result => {
+            console.log(result);
+            res.status(201).json({
+                message: 'Post created successfully',
+                post: result,
+            });
+        })
+        .catch(err => next(err));
 };

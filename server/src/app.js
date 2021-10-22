@@ -1,3 +1,5 @@
+const path = require('path');
+
 const express = require('express');
 const morgan = require('morgan');
 const helmet = require('helmet');
@@ -7,7 +9,6 @@ require('dotenv').config();
 
 const feedRoutes = require('./routes/feed');
 const User = require('./models/user');
-const Post = require('./models/post');
 
 const app = express();
 const morganFormat =
@@ -30,6 +31,7 @@ const corsOptions = {
 app.set('port', process.env.PORT || 8080);
 
 // app.use(express.urlencoded({ extended: false }));
+app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
 app.use(express.json());
 app.use(cors(corsOptions));
 app.use(helmet());
@@ -37,6 +39,14 @@ app.use(helmet());
 app.use(morgan(morganFormat));
 
 app.use('/feed', feedRoutes);
+
+app.use((err, req, res, next) => {
+    console.log('Error(middleware): ', err);
+    const status = err.statusCode || 500;
+    const message = err.message || 'Server error';
+    const data = err.data || {};
+    return res.status(status).json({ message, data });
+});
 
 mongoose
     .connect(mongoDBUrl, { useNewUrlParser: true, useUnifiedTopology: true })

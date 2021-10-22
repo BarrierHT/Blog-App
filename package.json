@@ -9,9 +9,9 @@
   "private": true,
   "workspaces": ["frontend", "server"],
   "scripts": {
-    "all": "frontendStart && serverStart",
-    "frontendStart" : "yarn workspace frontend start",
-    "serverStart" : "yarn workspace server start"
+    "all": "startFront && startBack",
+    "startFront" : "yarn workspace frontend start",
+    "startBack" : "yarn workspace server start"
   }
   
   
