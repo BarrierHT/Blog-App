@@ -16,10 +16,18 @@ const userSchema = new Schema(
             type: String,
             required: true,
         },
-        surname: {
+        status: {
             type: String,
             required: true,
+            default: 'I am new!',
         },
+        posts: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: 'post',
+                required: true,
+            },
+        ],
     },
     { timestamps: true, toJSON: { virtuals: true } }
 );

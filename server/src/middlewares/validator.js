@@ -1,4 +1,5 @@
 const { body, validationResult } = require('express-validator');
+const User = require('../models/user');
 
 exports.userValidationRules = (...fields) => {
     const errors = [];
@@ -11,11 +12,17 @@ exports.userValidationRules = (...fields) => {
                     .bail()
                     .trim()
                     .isLength({ min: 5, max: 100 })
-                    .bail()
                     .custom(value =>
-                        new RegExp(/^[a-zA-Z0-9_ñÑ\s]+$/).test(value)
+                        new RegExp(/^[a-zA-Z0-9_\-ñÑ\s]+$/).test(value)
                     )
-                    .escape()
+            );
+        } else if (field == 'body--status') {
+            errors.push(
+                body('status', 'Status format is not valid')
+                    .exists()
+                    .bail()
+                    .trim()
+                    .isLength({ min: 1, max: 40 })
             );
         } else if (field == 'body--content') {
             errors.push(
@@ -24,29 +31,51 @@ exports.userValidationRules = (...fields) => {
                     .bail()
                     .trim()
                     .isLength({ min: 5, max: 300 })
-                    .bail()
-                    .escape()
             );
-        } else if (field.split('?')[0] == 'body--image') {
+        } else if (field == 'body--email') {
             errors.push(
-                body('image', 'Image format is not valid').custom(
-                    (value, { req }) => {
-                        const needed =
-                            field.split('?')[1].split('=')[1] === 'true'
-                                ? true
-                                : false;
-                        if (!req.file) return needed ? false : true;
-                        else if (
-                            req.file.size > 0 &&
-                            req.file.size <= 1048576 &&
-                            (req.file.mimetype === 'image/png' ||
-                                req.file.mimetype === 'image/jpg' ||
-                                req.file.mimetype === 'image/jpeg')
+                body('email', 'Email format is not valid')
+                    .exists()
+                    .bail()
+                    .trim()
+                    .normalizeEmail()
+                    .isEmail()
+                    .isLength({ min: 2, max: 100 })
+                    .custom(async value => {
+                        return await User.findOne({ email: value }).then(
+                            user => {
+                                //Validate if a user with the email already exists (Control Validation)
+                                if (user)
+                                    return Promise.reject(
+                                        'A user with this email already exists!'
+                                    );
+                            }
+                        );
+                    })
+            );
+        } else if (field == 'body--name') {
+            errors.push(
+                body('name', 'Name format is not valid')
+                    .exists()
+                    .bail()
+                    .trim()
+                    .isLength({ min: 2, max: 70 })
+                    .custom(value =>
+                        new RegExp(/^[a-zA-Z0-9_ñÑ\s]+$/).test(value)
+                    )
+            );
+        } else if (field == 'body--password') {
+            errors.push(
+                body('password', 'Password format is not valid, [5-100] length')
+                    .exists()
+                    .bail()
+                    .trim()
+                    .isLength({ min: 5, max: 100 })
+                    .custom(value =>
+                        new RegExp(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/g).test(
+                            value
                         )
-                            return true;
-                        else return false;
-                    }
-                )
+                    )
             );
         }
     });

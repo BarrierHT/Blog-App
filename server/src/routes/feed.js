@@ -8,6 +8,8 @@ const feedController = require('../controllers/feed');
 const userValidationRules = require('../middlewares/validator')
     .userValidationRules;
 
+const isAuth = require('../middlewares/isAuth').isAuth;
+
 const router = express.Router();
 
 const fileStorage = multer.diskStorage({
@@ -29,13 +31,16 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage: fileStorage,
     fileFilter,
-    limits: { fileSize: 1048576 },
+    limits: { fileSize: 3145728 },
 });
 
-router.get('/posts', feedController.getPosts);
-router.get('/post/:postId', feedController.getPost);
+router.get('/posts', isAuth, feedController.getPosts);
+router.get('/post/:postId', isAuth, feedController.getPost);
+
+router.get('/status', isAuth, feedController.getStatus);
 router.post(
     '/post',
+    isAuth,
     upload.single('image'),
     userValidationRules(
         'body--title',
@@ -44,5 +49,26 @@ router.post(
     ),
     feedController.createPost
 );
+
+router.put(
+    '/post/:postId',
+    isAuth,
+    upload.single('image'),
+    userValidationRules(
+        'body--title',
+        'body--content',
+        'body--image?needed=false'
+    ),
+    feedController.updatePost
+);
+
+router.patch(
+    '/update-status',
+    userValidationRules('body--status'),
+    isAuth,
+    feedController.updateStatus
+);
+
+router.delete('/post/:postId', isAuth, feedController.deletePost);
 
 module.exports = router;
