@@ -3,10 +3,8 @@ const errorHandler = require('../util/errorHandler').errorHandler;
 
 exports.isAuth = (req, res, next) => {
     const authHeader = req.get('Authorization');
-    if (!authHeader) {
-        const err = errorHandler('Not Authenticated', 401, {});
-        throw err;
-    }
+    if (!authHeader) throw errorHandler('Not Authenticated', 401, {});
+
     const token = authHeader.split(' ')[1];
     let decodedToken;
     try {
@@ -14,10 +12,8 @@ exports.isAuth = (req, res, next) => {
     } catch (err) {
         throw err;
     }
-    if (!decodedToken) {
-        const err = errorHandler('Not Authenticated', 401, {});
-        throw err;
-    }
+    if (!decodedToken) throw errorHandler('Not Authenticated', 401, {});
+
     req.userId = decodedToken.userId;
     next();
 };

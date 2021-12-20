@@ -4,13 +4,11 @@ const jwt = require('jsonwebtoken');
 const { validate } = require('../middlewares/validator');
 const { errorHandler } = require('../util/errorHandler');
 
-exports.signup = async (req, res, next) => {
+exports.signup = (req, res, next) => {
     const validationErrors = validate(req);
 
-    if (Object.keys(validationErrors).length > 0) {
-        const err = errorHandler('Validation Error', 422, validationErrors);
-        return Promise.reject(err).catch(err => next(err));
-    }
+    if (Object.keys(validationErrors).length > 0)
+        throw errorHandler('Validation Error', 422, validationErrors);
 
     const { email, name, password } = req.body;
     bcrypt
@@ -59,10 +57,6 @@ exports.login = (req, res, next) => {
                 { email, userId: loadedUser._id.toString() },
                 process.env.SECRET_JWT_AUTHENTICATION,
                 { expiresIn: '1h' }
-                // (err, token) => {
-                //     if (err) next(err);
-                //     return token;
-                // }
             );
             return res.status(200).json({
                 message: 'User logged correctly!',

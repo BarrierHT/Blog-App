@@ -25,6 +25,7 @@ const corsOptions = {
     origin: ['https://cdpn.io', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
 };
 
 app.set('port', process.env.PORT || 8080);
@@ -49,5 +50,12 @@ app.use((err, req, res, next) => {
 
 mongoose
     .connect(mongoDBUrl, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(res => app.listen(app.get('port')))
+    .then(res => {
+        const httpServer = app.listen(app.get('port'));
+        const io = require('./util/socket').init(httpServer);
+        io.on('connection', socket => {
+            // console.log(socket);
+            console.log('User connected', socket.id);
+        });
+    })
     .catch(err => console.log(err));
