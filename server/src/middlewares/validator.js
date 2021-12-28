@@ -1,91 +1,97 @@
-const { body, validationResult } = require('express-validator');
+const validator = require('validator').default;
 const User = require('../models/user');
 
-exports.userValidationRules = (...fields) => {
+module.exports = async fields => {
     const errors = [];
 
-    fields.forEach(field => {
-        if (field == 'body--title') {
-            errors.push(
-                body('title', 'Title format is not valid')
-                    .exists()
-                    .bail()
-                    .trim()
-                    .isLength({ min: 5, max: 100 })
-                    .custom(value =>
-                        new RegExp(/^[a-zA-Z0-9_\-ñÑ\s]+$/).test(value)
-                    )
-            );
-        } else if (field == 'body--status') {
-            errors.push(
-                body('status', 'Status format is not valid')
-                    .exists()
-                    .bail()
-                    .trim()
-                    .isLength({ min: 1, max: 40 })
-            );
-        } else if (field == 'body--content') {
-            errors.push(
-                body('content', 'Content format is not valid')
-                    .exists()
-                    .bail()
-                    .trim()
-                    .isLength({ min: 5, max: 300 })
-            );
-        } else if (field == 'body--email') {
-            errors.push(
-                body('email', 'Email format is not valid')
-                    .exists()
-                    .bail()
-                    .trim()
-                    .normalizeEmail()
-                    .isEmail()
-                    .isLength({ min: 2, max: 100 })
-                    .custom(async value => {
-                        return await User.findOne({ email: value }).then(
-                            user => {
-                                //Validate if a user with the email already exists (Control Validation)
-                                if (user)
-                                    return Promise.reject(
-                                        'A user with this email already exists!'
-                                    );
-                            }
-                        );
-                    })
-            );
-        } else if (field == 'body--name') {
-            errors.push(
-                body('name', 'Name format is not valid')
-                    .exists()
-                    .bail()
-                    .trim()
-                    .isLength({ min: 2, max: 70 })
-                    .custom(value =>
-                        new RegExp(/^[a-zA-Z0-9_ñÑ\s]+$/).test(value)
-                    )
-            );
-        } else if (field == 'body--password') {
-            errors.push(
-                body('password', 'Password format is not valid, [5-100] length')
-                    .exists()
-                    .bail()
-                    .trim()
-                    .isLength({ min: 5, max: 100 })
-                    .custom(value =>
-                        new RegExp(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/g).test(
-                            value
-                        )
-                    )
-            );
+    for (const field of fields) {
+        if (field.name == 'title') {
+            field.value = field.value.trim();
+            if (
+                validator.isEmpty(field.value) ||
+                !validator.isLength(field.value, { min: 5, max: 70 }) ||
+                !new RegExp(/^[a-zA-Z0-9_ñÑ\s]+$/).test(field.value)
+            ) {
+                errors.push({
+                    param: field.name,
+                    msg: 'Title Format is not valid',
+                });
+            }
+        } else if (field.name == 'content') {
+            field.value = field.value.trim();
+            if (
+                validator.isEmpty(field.value) ||
+                !validator.isLength(field.value, { min: 2, max: 300 })
+            ) {
+                errors.push({
+                    param: field.name,
+                    msg: 'Content Format is not valid',
+                });
+            }
+        } else if (field.name == 'status') {
+            field.value = field.value.trim();
+            if (
+                validator.isEmpty(field.value) ||
+                !validator.isLength(field.value, { min: 5, max: 150 })
+            ) {
+                errors.push({
+                    param: field.name,
+                    msg: 'Status Format is not valid',
+                });
+            }
+        } else if (field.name == 'email') {
+            field.value = validator.normalizeEmail(field.value).trim();
+
+            const existingUser = await User.findOne({
+                email: field.value,
+            }).then(user => user);
+
+            if (existingUser) {
+                errors.push({
+                    param: field.name,
+                    msg: 'A user with this email already exists!',
+                });
+                continue;
+            }
+
+            if (
+                validator.isEmpty(field.value) ||
+                !validator.isEmail(field.value) ||
+                !validator.isLength(field.value, { min: 2, max: 100 })
+            ) {
+                errors.push({
+                    param: field.name,
+                    msg: 'Email Format is not valid',
+                });
+            }
+        } else if (field.name == 'name') {
+            field.value = field.value.trim();
+            if (
+                validator.isEmpty(field.value) ||
+                !validator.isLength(field.value, { min: 2, max: 70 }) ||
+                !new RegExp(/^[a-zA-Z0-9_ñÑ\s]+$/).test(field.value)
+            ) {
+                errors.push({
+                    param: field.name,
+                    msg: 'Name Format is not valid',
+                });
+            }
+        } else if (field.name == 'password') {
+            field.value = field.value.trim();
+            if (
+                validator.isEmpty(field.value) ||
+                !validator.isLength(field.value, { min: 5, max: 100 }) ||
+                !new RegExp(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/g).test(field.value)
+            ) {
+                errors.push({
+                    param: field.name,
+                    msg: 'Password Format is not valid',
+                });
+            }
         }
-    });
+    }
 
-    return errors;
-};
-
-exports.validate = req => {
-    const errors = validationResult(req);
     const extractedErrors = {};
-    errors.array().map(err => (extractedErrors[err.param] = err.msg));
+    errors.map(err => (extractedErrors[err.param] = err.msg));
     return extractedErrors;
 };

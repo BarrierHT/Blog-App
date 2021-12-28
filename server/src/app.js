@@ -1,14 +1,19 @@
 const path = require('path');
 
 const express = require('express');
+const { graphqlHTTP } = require('express-graphql');
 const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
+const isAuth = require('./middlewares/isAuth').isAuth;
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
+const fileHelper = require('./util/fileHelper');
+const errorHandler = require('./util/errorHandler').errorHandler;
+
 const app = express();
 const morganFormat =
     ':body :remote-addr :remote-user :method :url HTTP/:http-version :status :res[content-length] - :response-time ms';
@@ -29,16 +34,62 @@ const corsOptions = {
 };
 
 app.set('port', process.env.PORT || 8080);
-app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
 
 app.use(express.json());
-app.use(cors(corsOptions));
-app.use(helmet());
+
+app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
+
+app.use(cors(corsOptions), (req, res, next) => {
+    if (req.method == 'OPTIONS') return res.sendStatus(200);
+    next();
+});
+
+app.use(
+    helmet(),
+    helmet.contentSecurityPolicy({
+        useDefaults: true,
+        directives: {
+            'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        },
+    })
+);
 
 app.use(morgan(morganFormat));
 
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
+app.use(fileHelper.uploadFile().single('image'));
+
+app.use(isAuth); //*Protection of Routes (Only save the answer in the req to handle in the appropiate resolver)
+
+app.put('/upload-image', (req, res, next) => {
+    // console.log('req.file:', req.file);
+    if (!req.isAuth) throw errorHandler('Not authenticated', 401, {});
+    if (!req.file)
+        return res.status(200).json({ message: 'Image was not provided' });
+
+    if (req.body.oldPath) fileHelper.fileRemove(req.body.oldPath);
+
+    return res.status(200).json({
+        message: 'Image uploaded correctly',
+        filePath: 'images/' + req.file.filename,
+    });
+});
+
+app.use(
+    '/graphql',
+    graphqlHTTP({
+        schema: graphqlSchema,
+        rootValue: graphqlResolver,
+        graphiql: true,
+        customFormatErrorFn(err) {
+            //*Handle errors in Graphql (Status in the body)
+            if (!err.originalError) return err;
+            const status = err.originalError.statusCode || 500;
+            const message = err.originalError.message || 'Server error';
+            const data = err.originalError.data || {};
+            return { message, status, data };
+        },
+    })
+);
 
 app.use((err, req, res, next) => {
     console.log('Error(middleware): ', err);
@@ -51,11 +102,6 @@ app.use((err, req, res, next) => {
 mongoose
     .connect(mongoDBUrl, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(res => {
-        const httpServer = app.listen(app.get('port'));
-        const io = require('./util/socket').init(httpServer);
-        io.on('connection', socket => {
-            // console.log(socket);
-            console.log('User connected', socket.id);
-        });
+        app.listen(app.get('port'));
     })
     .catch(err => console.log(err));
