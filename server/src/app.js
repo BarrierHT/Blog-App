@@ -22,7 +22,7 @@ morgan.token('body', req => JSON.stringify(req.body));
 
 const corsOptions = {
     origin: [
-        'https://barrier-blog.com/',
+        'https://master.d32vp8t9wfhq83.amplifyapp.com',
         'http://localhost:3000',
         'https://barrier-blog-server.herokuapp.com/',
     ],

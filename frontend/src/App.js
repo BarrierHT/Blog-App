@@ -63,7 +63,7 @@ class App extends Component {
     loginHandler = (event, authData) => {
         event.preventDefault();
         this.setState({ authLoading: true });
-        fetch('http://localhost:8080/auth/login', {
+        fetch('https://barrier-blog-server.herokuapp.com/auth/login', {
             method: 'POST',
             headers: { 'Content-type': 'application/json' },
             body: JSON.stringify({
@@ -111,7 +111,7 @@ class App extends Component {
     signupHandler = (event, authData) => {
         event.preventDefault();
         this.setState({ authLoading: true });
-        fetch('http://localhost:8080/auth/signup', {
+        fetch('https://barrier-blog-server.herokuapp.com/auth/signup', {
             method: 'PUT',
             headers: { 'Content-type': 'application/json' },
             body: JSON.stringify({

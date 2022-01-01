@@ -15,7 +15,7 @@ class SinglePost extends Component {
     componentDidMount() {
         //*Fetch a single post
         const postId = this.props.match.params.postId;
-        fetch('http://localhost:8080/feed/post/' + postId, {
+        fetch('https://barrier-blog-server.herokuapp.com/feed/post/' + postId, {
             method: 'GET',
             headers: { Authorization: 'Bearer ' + this.props.token },
         })

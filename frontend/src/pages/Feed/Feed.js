@@ -23,7 +23,7 @@ class Feed extends Component {
     };
 
     componentDidMount() {
-        fetch('http://localhost:8080/feed/status', {
+        fetch('https://barrier-blog-server.herokuapp.com/feed/status', {
             method: 'GET',
             headers: { Authorization: 'Bearer ' + this.props.token },
         })
@@ -40,7 +40,7 @@ class Feed extends Component {
 
         this.loadPosts();
 
-        const socket = io('http://localhost:8080'); //*Establish connection
+        const socket = io('https://barrier-blog-server.herokuapp.com'); //*Establish connection
         //*Listener of the connection
         socket.on('posts', data => {
             console.log(data.post);
@@ -99,10 +99,13 @@ class Feed extends Component {
             page--;
             this.setState({ postPage: page });
         }
-        fetch('http://localhost:8080/feed/posts?page=' + page, {
-            method: 'GET',
-            headers: { Authorization: 'Bearer ' + this.props.token },
-        })
+        fetch(
+            'https://barrier-blog-server.herokuapp.com/feed/posts?page=' + page,
+            {
+                method: 'GET',
+                headers: { Authorization: 'Bearer ' + this.props.token },
+            }
+        )
             .then(res => {
                 if (res.status !== 200) {
                     throw new Error('Failed to fetch posts.');
@@ -128,7 +131,7 @@ class Feed extends Component {
     statusUpdateHandler = event => {
         event.preventDefault();
         console.log(this.state.status);
-        fetch('http://localhost:8080/feed/update-status', {
+        fetch('https://barrier-blog-server.herokuapp.com/feed/update-status', {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -180,11 +183,13 @@ class Feed extends Component {
         formData.append('content', postData.content);
         formData.append('image', postData.image);
 
-        let url = 'http://localhost:8080/feed/post';
+        let url = 'https://barrier-blog-server.herokuapp.com/feed/post';
         let method = 'POST';
         if (this.state.editPost) {
             //Edit the post
-            url = 'http://localhost:8080/feed/post/' + this.state.editPost._id;
+            url =
+                'https://barrier-blog-server.herokuapp.com/feed/post/' +
+                this.state.editPost._id;
             method = 'PUT';
         }
 
@@ -235,7 +240,7 @@ class Feed extends Component {
     deletePostHandler = postId => {
         //*Delete a post
         this.setState({ postsLoading: true });
-        fetch('http://localhost:8080/feed/post/' + postId, {
+        fetch('https://barrier-blog-server.herokuapp.com/feed/post/' + postId, {
             headers: { Authorization: 'Bearer ' + this.props.token },
             method: 'DELETE',
         })
