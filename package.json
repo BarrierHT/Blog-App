@@ -5,13 +5,15 @@
   "repository": "https://github.com/BarrierHT/Blog-App.git",
   "author": "BarrierHT <facuro1000@outlook.com>",
   "license": "MIT",
-  
+  "engines":{
+    "node": "16.13.1"
+  },
   "private": true,
   "workspaces": ["frontend", "server"],
   "scripts": {
     "all": "startFront && startBack",
     "startFront" : "yarn workspace frontend start",
-    "startBack" : "yarn workspace server start"
+    "startBack" : "yarn workspace server start:dev"
   }
   
   

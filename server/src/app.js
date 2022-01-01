@@ -27,7 +27,11 @@ const mongoDBUrl = `mongodb+srv://${mongoUser}:${mongoPassword}@${mongoCluster}.
 morgan.token('body', req => JSON.stringify(req.body));
 
 const corsOptions = {
-    origin: ['https://cdpn.io', 'http://localhost:3000'],
+    origin: [
+        'https://cdpn.io',
+        'http://localhost:3000',
+        'https://barrier-blog-server.herokuapp.com/',
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,
@@ -56,9 +60,9 @@ app.use(
 
 app.use(morgan(morganFormat));
 
-app.use(fileHelper.uploadFile().single('image'));
-
 app.use(isAuth); //*Protection of Routes (Only save the answer in the req to handle in the appropiate resolver)
+
+app.use(fileHelper.uploadFile().single('image'));
 
 app.put('/upload-image', (req, res, next) => {
     // console.log('req.file:', req.file);
