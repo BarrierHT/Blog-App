@@ -1,1 +1,1 @@
-web: yarn install && yarn startBack
+web: cd server && yarn install && yarn start
