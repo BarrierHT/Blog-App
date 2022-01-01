@@ -1,15 +1,23 @@
-const path = require('path');
+const aws = require('aws-sdk');
 
 const { validate } = require('../middlewares/validator');
 const { errorHandler } = require('../util/errorHandler');
-const fileRemove = require('../util/fileHelper').fileRemove;
 const io = require('../util/socket');
 const User = require('../models/user');
 const Post = require('../models/post');
 
+aws.config.update({
+    secretAccessKey: process.env.SECRET_KEY_AWS,
+    accessKeyId: process.env.ACCESS_KEY_AWS,
+    region: process.env.REGION_AWS,
+});
+
+const s3 = new aws.S3();
+
 exports.getPost = (req, res, next) => {
     const postId = req.params.postId;
     Post.findById(postId)
+        .populate('creator', 'name')
         .then(post => {
             if (!post) throw errorHandler('Post Not Found', 404, {});
             return res.status(200).json({ message: 'Post Fetched', post });
@@ -41,24 +49,34 @@ exports.createPost = async (req, res, next) => {
     const validationErrors = validate(req);
 
     if (Object.keys(validationErrors).length > 0) {
-        if (req.file)
-            fileRemove(
-                path.join(__dirname, '..', 'data', 'images', req.file.filename)
+        if (req.file) {
+            s3.deleteObject(
+                {
+                    Bucket: 'images-blog-app',
+                    Key: decodeURIComponent(
+                        req.file.location.split('.com/')[1]
+                    ),
+                },
+                function(err, data) {
+                    if (err) console.log(err, err.stack);
+                    else console.log(data);
+                }
             );
+        }
         const err = errorHandler('Validation Error', 422, validationErrors);
         return await Promise.reject(err).catch(err => next(err));
     }
 
+    if (!req.file) throw errorHandler('An image is required', 422, {});
+
     const { title, content } = req.body;
-    const imageUrl = 'images/' + (req.file.filename || '');
 
     const user = await User.findById(req.userId);
-
     const post = new Post({
         title,
         content,
         creator: req.userId,
-        imageUrl,
+        imageUrl: req.file.location,
     });
     post.save()
         .then(result => {
@@ -87,10 +105,20 @@ exports.updatePost = (req, res, next) => {
     const validationErrors = validate(req);
 
     if (Object.keys(validationErrors).length > 0) {
-        if (req.file)
-            fileRemove(
-                path.join(__dirname, '..', 'data', 'images', req.file.filename)
+        if (req.file) {
+            s3.deleteObject(
+                {
+                    Bucket: 'images-blog-app',
+                    Key: decodeURIComponent(
+                        req.file.location.split('.com/')[1]
+                    ),
+                },
+                function(err, data) {
+                    if (err) console.log(err, err.stack);
+                    else console.log(data);
+                }
             );
+        }
         throw errorHandler('Validation Error', 422, validationErrors);
     }
 
@@ -106,8 +134,19 @@ exports.updatePost = (req, res, next) => {
             post.title = title;
             post.content = content;
             if (req.file) {
-                fileRemove(path.join(__dirname, '..', 'data', post.imageUrl));
-                post.imageUrl = 'images/' + req.file.filename;
+                s3.deleteObject(
+                    {
+                        Bucket: 'images-blog-app',
+                        Key: decodeURIComponent(
+                            post.imageUrl.split('.com/')[1]
+                        ),
+                    },
+                    function(err, data) {
+                        if (err) console.log(err, err.stack);
+                        else console.log(data);
+                    }
+                );
+                post.imageUrl = req.file.location;
             }
             return post.save();
         })
@@ -133,7 +172,16 @@ exports.deletePost = (req, res, next) => {
             if (!post) throw errorHandler('Post Not Found', 404, {});
             if (post.creator._id.toString() !== req.userId)
                 throw errorHandler('Not authorized', 403, {});
-            fileRemove(path.join(__dirname, '..', 'data', post.imageUrl));
+            s3.deleteObject(
+                {
+                    Bucket: 'images-blog-app',
+                    Key: decodeURIComponent(post.imageUrl.split('.com/')[1]),
+                },
+                function(err, data) {
+                    if (err) console.log(err, err.stack);
+                    else console.log(data);
+                }
+            );
             return Post.findByIdAndRemove(postId);
         })
         .then(result => User.findById(req.userId))

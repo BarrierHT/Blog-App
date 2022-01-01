@@ -33,7 +33,7 @@ class SinglePost extends Component {
                     date: new Date(resData.post.createdAt).toLocaleDateString(
                         'en-US'
                     ),
-                    image: 'http://localhost:8080/' + resData.post.imageUrl,
+                    image: resData.post.imageUrl,
                     content: resData.post.content,
                 });
             })

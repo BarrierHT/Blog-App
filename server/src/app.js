@@ -1,8 +1,7 @@
-const path = require('path');
-
 const express = require('express');
 const morgan = require('morgan');
 const helmet = require('helmet');
+const compression = require('compression');
 const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
@@ -22,18 +21,22 @@ const mongoDBUrl = `mongodb+srv://${mongoUser}:${mongoPassword}@${mongoCluster}.
 morgan.token('body', req => JSON.stringify(req.body));
 
 const corsOptions = {
-    origin: ['https://cdpn.io', 'http://localhost:3000'],
+    origin: [
+        'https://barrier-blog.com/',
+        'http://localhost:3000',
+        'https://barrier-blog-server.herokuapp.com/',
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,
 };
 
 app.set('port', process.env.PORT || 8080);
-app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
 
 app.use(express.json());
 app.use(cors(corsOptions));
 app.use(helmet());
+app.use(compression());
 
 app.use(morgan(morganFormat));
 
