@@ -1,1 +1,1 @@
-web: yarn startBack
+web: yarn install && yarn startBack
