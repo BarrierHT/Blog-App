@@ -6,7 +6,7 @@
   "author": "BarrierHT <facuro1000@outlook.com>",
   "license": "MIT",
   "engines":{
-    "node": "16.13.1"
+    "node": "16.14.0"
   },
   "private": true,
   "workspaces": ["frontend", "server"],
